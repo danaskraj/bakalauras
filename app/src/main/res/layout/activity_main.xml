@@ -10,11 +10,11 @@
     android:gravity="bottom"
     app:umanoPanelHeight="100dp"
     app:umanoShadowHeight="0dp"
-    app:umanoOverlay="true">
+    app:umanoOverlay="false">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent" >
 
         <fragment xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:map="http://schemas.android.com/apk/res-auto"
@@ -25,10 +25,18 @@
             android:layout_height="match_parent"
             tools:context=".MapsActivity" />
 
-
+        <Button
+            android:id="@+id/directionsButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Directions"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:visibility="gone"/>
 
     </RelativeLayout>
 
-    <include layout="@layout/slide_up" />
+    <include layout="@layout/slide_up"
+        android:id="@+id/slider" />
 
 </com.sothree.slidinguppanel.SlidingUpPanelLayout>

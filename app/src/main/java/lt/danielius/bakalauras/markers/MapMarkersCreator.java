@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import lt.danielius.bakalauras.directions.DirectionsPathRetriever;
@@ -21,30 +22,32 @@ import lt.danielius.bakalauras.xml.InfrastructureTable;
 public class MapMarkersCreator {
 
     private static final String TAG = "MapMarkersCreator";
-    private Handler handler = new Handler();
+    private final Handler handler = new Handler();
     private CreatorStatus status = CreatorStatus.UNINITIALIZED;
     private final List<LatLng> stationLocationList = new ArrayList<>();
     private MarkersCreateCallback callback;
 
     public MapMarkersCreator(){}
 
-    public MapMarkersCreator(HashMap<String, InfrastructureTable> tables){
-        add(tables);
+    public MapMarkersCreator(HashMap<String, InfrastructureTable> tables, boolean includePaidStations){
+        add(tables, includePaidStations);
         status = CreatorStatus.READY;
     }
 
-    public void add(HashMap<String, InfrastructureTable> tables){
+    public void add(HashMap<String, InfrastructureTable> tables, boolean includePaidStations){
         for (InfrastructureTable table : tables.values()) {
             for (InfrastructureSite site : table.getSites()) {
                 for (InfrastructureStation station : site.getStations()) {
-                    stationLocationList.add(station.getSiteLocation().getLocation());
+                    if ((includePaidStations) || (!includePaidStations && Objects.equals(station.getSitePricingPolicy().getPricingPolicy(), "free"))) {
+                        stationLocationList.add(station.getSiteLocation().getLocation());
+                    }
                 }
             }
         }
         status = CreatorStatus.READY;
     }
 
-    public void add(List<LatLng> stations){
+    public void add(List<LatLng> stations, boolean includePaidStations){
         this.stationLocationList.addAll(stations);
         status = CreatorStatus.READY;
     }
@@ -65,7 +68,6 @@ public class MapMarkersCreator {
                     callback.onMarkers(new ArrayList<>(), new ArrayList<>());
             });
         }
-
         DirectionsPathRetriever directionsPathRetriever = new DirectionsPathRetriever(origin, destination, path -> {
             List<LatLng> markers = getMarkersEveryNMeters(path, firstDistance, otherDistances);
             handler.post(() -> {
@@ -77,10 +79,10 @@ public class MapMarkersCreator {
     }
 
     private List<LatLng> getMarkersEveryNMeters(List<LatLng> path, double firstDistance, double otherDistances){
-        List<LatLng> res = new ArrayList<>();
+        List<LatLng> markersList = new ArrayList<>();
         double distance = firstDistance;
         LatLng p0 = path.get(0);
-        res.add(p0);
+        markersList.add(p0);
         if (path.size() > 2) {
             //Initialize temp variables for sum distance between points and
             //and save the previous point
@@ -127,7 +129,7 @@ public class MapMarkersCreator {
                         ArrayList<Double> distances = new ArrayList<Double>(keySet);
                         Collections.sort(distances);
                         prev = pp;
-                        res.add(stationsAroundMarker.get(distances.get(0)));
+                        markersList.add(stationsAroundMarker.get(distances.get(0)));
                         distance = otherDistances;
                         previousPointIndex = path.indexOf(pp);
                     }
@@ -145,9 +147,9 @@ public class MapMarkersCreator {
 
             //Add the last point of route
             LatLng plast = path.get(path.size()-1);
-            res.add(plast);
+            markersList.add(plast);
         }
 
-        return res;
+        return markersList;
     }
 }

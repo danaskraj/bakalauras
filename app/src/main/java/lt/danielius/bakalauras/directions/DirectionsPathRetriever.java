@@ -35,12 +35,10 @@ public class DirectionsPathRetriever extends Thread {
     public void run() {
         List<LatLng> path = new ArrayList<>();
 
-        //Execute Directions API request
         DirectionsApiRequest request = DirectionsApi.getDirections(context, origin, destination);
         try {
             DirectionsResult result = request.await();
 
-            //Loop through legs and steps to get encoded polylines of each step
             if (result.routes != null && result.routes.length > 0) {
                 DirectionsRoute route = result.routes[0];
 
@@ -55,7 +53,6 @@ public class DirectionsPathRetriever extends Thread {
                                         DirectionsStep step1 = step.steps[k];
                                         EncodedPolyline points1 = step1.polyline;
                                         if (points1 != null) {
-                                            //Decode polyline and add points to list of route coordinates
                                             List<com.google.maps.model.LatLng> coords1 = points1.decodePath();
                                             for (com.google.maps.model.LatLng coord1 : coords1) {
                                                 path.add(new LatLng(coord1.lat, coord1.lng));
@@ -65,7 +62,6 @@ public class DirectionsPathRetriever extends Thread {
                                 } else {
                                     EncodedPolyline points = step.polyline;
                                     if (points != null) {
-                                        //Decode polyline and add points to list of route coordinates
                                         List<com.google.maps.model.LatLng> coordinates = points.decodePath();
                                         for (com.google.maps.model.LatLng coordinate : coordinates) {
                                             path.add(new LatLng(coordinate.lat, coordinate.lng));

@@ -84,24 +84,16 @@ public class MapMarkersCreator {
         LatLng p0 = path.get(0);
         markersList.add(p0);
         if (path.size() > 2) {
-            //Initialize temp variables for sum distance between points and
-            //and save the previous point
             double tmp = 0;
             LatLng prev = p0;
             int pathIndex = 0;
             int previousPointIndex = 0;
             while (pathIndex < path.size()) {
                 LatLng p = path.get(pathIndex);
-                //Sum the distance
                 tmp += SphericalUtil.computeDistanceBetween(prev, p);
                 if (tmp < distance) {
-                    //If it is less than certain value continue sum
                     prev = p;
                 } else {
-                    //If distance is greater than certain value lets calculate
-                    //how many meters over desired value we have and find position of point
-                    //that will be at exact distance value
-
                     double diff = tmp - distance;
                     double heading = SphericalUtil.computeHeading(prev, p);
 
@@ -145,7 +137,6 @@ public class MapMarkersCreator {
                 pathIndex++;
             }
 
-            //Add the last point of route
             LatLng plast = path.get(path.size()-1);
             markersList.add(plast);
         }

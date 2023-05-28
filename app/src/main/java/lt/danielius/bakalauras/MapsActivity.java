@@ -62,20 +62,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     Switch includePaidStations;
     String uriString;
     LinearLayout dragView;
-    int maxRange = 1200;
+    int maxRange = 830;
     int defaultRangeValue = 100;
     double range;
     double fullRange;
-    //    String origin = "Neuzmirstuoliu, 8, 04124 Vilnius, Lithuania";
+
+    int LOCATION_REFRESH_TIME = 500;
+    int LOCATION_REFRESH_DISTANCE = 5;
+
     String origin;
     String destination;
-    protected LocationManager locationManager;
-    protected LocationListener locationListener;
-    protected Context context;
-    protected boolean gps_enabled, network_enabled;
-    private FusedLocationProviderClient fusedLocationClient;
     private MapMarkersCreator mapMarkersCreator = new MapMarkersCreator();
     private GoogleMap mMap;
+
+    private final android.location.LocationListener mLocationListener = location -> {
+        origin = location.getLatitude() + "," + location.getLongitude();
+    };
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -93,6 +95,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         includePaidStations = (Switch) findViewById(R.id.switch1);
         dragView = (LinearLayout) findViewById(R.id.dragView);
         directionsButton = (Button) findViewById(R.id.directionsButton);
+
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1001);
+        }
+        else {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_TIME,
+                    (float) LOCATION_REFRESH_DISTANCE, mLocationListener);
+        }
 
         range = defaultRangeValue;
         fullRange = defaultRangeValue;
@@ -158,7 +170,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (!rangeString.isEmpty()) {
                     range = Double.parseDouble(rangeString);
                     rangeSeekBar.setProgress(Integer.parseInt(rangeString));
-                } else {
+                } else if (Integer.parseInt(rangeString) > maxRange) {
+                    rangeText.setText(Integer.toString(maxRange));
+                    Toast.makeText(MapsActivity.this, "Range cannot be longer than 1200km", Toast.LENGTH_SHORT).show();
+                }  else {
                     rangeSeekBar.setProgress(0);
                 }
             }
@@ -204,6 +219,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (!rangeString.isEmpty()) {
                     fullRange = Double.parseDouble(rangeString);
                     fullRangeSeekBar.setProgress((int) fullRange);
+                } else if (Integer.parseInt(rangeString) > maxRange) {
+                    fullRangeText.setText(Integer.toString(maxRange));
                 } else {
                     fullRangeSeekBar.setProgress(0);
                 }
@@ -218,21 +235,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View v) {
                 XmlParser xmlParser = new XmlParser(tables -> {
                     mapMarkersCreator.add(tables, includePaidStations.isChecked());
-                    LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-                    if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        return;
-                    }           locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 30000L, (float) 0, (android.location.LocationListener) MapsActivity.this);
-                    Criteria criteria = new Criteria();
-                    String bestProvider = locationManager.getBestProvider(criteria, true);
-                    Location location = locationManager.getLastKnownLocation(bestProvider);
-
-                    if (location == null) {
-                        Toast.makeText(getApplicationContext(), "GPS signal not found", Toast.LENGTH_SHORT).show();
-                    }
-                    if (location != null) {
-                        onLocationChanged(location);
-                    }
-                    mapMarkersCreator.getMarkersEveryNMeters(origin, destination, (range-20)*1000, (fullRange-20)*1000);
+                    mapMarkersCreator.getMarkersEveryNMeters(origin, destination, (range - 20) * 1000, (fullRange - 20) * 1000);
                 });
                 xmlParser.start();
                 mapFragment.getMapAsync(MapsActivity.this);
@@ -291,19 +294,5 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             directionsButton.setVisibility(View.VISIBLE);
         });
-    }
-
-    public void onLocationChanged(Location location) {
-        origin = location.getLatitude() + "," + location.getLongitude();
-        Toast.makeText(getApplicationContext(), origin, Toast.LENGTH_SHORT).show();
-    }
-
-    public void onProviderDisabled(String provider) {
-    }
-
-    public void onProviderEnabled(String provider) {
-    }
-
-    public void onStatusChanged(String provider, int status, Bundle extras) {
     }
 }
